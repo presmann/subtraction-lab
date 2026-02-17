@@ -54,6 +54,9 @@
             const [subtractMin, setSubtractMin] = useState(0);
             const [subtractMax, setSubtractMax] = useState(13);
             const [randomSeed, setRandomSeed] = useState(null);
+            const [dotSize, setDotSize] = useState('medium'); // 'small', 'medium', 'large'
+            const [objectType, setObjectType] = useState('apple'); // 'apple', 'orange', 'banana', 'strawberry', 'ball'
+            const [showStepCounter, setShowStepCounter] = useState(false);
             
             const [currentPosition, setCurrentPosition] = useState(null);
             const [steps, setSteps] = useState(0);
@@ -71,14 +74,50 @@
             
             const correctAnswer = startNum - subtractNum;
             
-            // Initialize seed on first load
+            // Initialize seed on first load from full timestamp
             useEffect(() => {
                 if (randomSeed === null) {
-                    const now = new Date();
-                    const seed = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+                    const seed = Date.now(); // Full timestamp in milliseconds
                     setRandomSeed(seed);
                 }
+                
+                // Load settings from localStorage
+                const savedSettings = localStorage.getItem('subtractionLabSettings');
+                if (savedSettings) {
+                    try {
+                        const settings = JSON.parse(savedSettings);
+                        if (settings.firstNumMin !== undefined) setFirstNumMin(settings.firstNumMin);
+                        if (settings.firstNumMax !== undefined) setFirstNumMax(settings.firstNumMax);
+                        if (settings.subtractMin !== undefined) setSubtractMin(settings.subtractMin);
+                        if (settings.subtractMax !== undefined) setSubtractMax(settings.subtractMax);
+                        if (settings.dotSize !== undefined) setDotSize(settings.dotSize);
+                        if (settings.objectType !== undefined) setObjectType(settings.objectType);
+                    } catch (e) {
+                        console.log('Could not load settings');
+                    }
+                }
             }, []);
+            
+            // Generate initial question when seed is ready
+            useEffect(() => {
+                if (randomSeed !== null && startNum === 9 && subtractNum === 2) {
+                    // Only generate on first load (when still at default values)
+                    generateNewQuestion();
+                }
+            }, [randomSeed]);
+            
+            // Save settings to localStorage whenever they change
+            useEffect(() => {
+                const settings = {
+                    firstNumMin,
+                    firstNumMax,
+                    subtractMin,
+                    subtractMax,
+                    dotSize,
+                    objectType
+                };
+                localStorage.setItem('subtractionLabSettings', JSON.stringify(settings));
+            }, [firstNumMin, firstNumMax, subtractMin, subtractMax, dotSize, objectType]);
             
             // Seeded random number generator
             const seededRandom = (min, max, currentSeed) => {
@@ -157,6 +196,14 @@
                 const maxNum = Math.max(startNum + 2, 10);
                 const started = currentPosition !== null;
                 
+                // Get dot sizes based on setting
+                const dotSizes = {
+                    small: { starting: 8, current: 6, path: 4 },
+                    medium: { starting: 12, current: 10, path: 6 },
+                    large: { starting: 16, current: 13, path: 8 }
+                };
+                const sizes = dotSizes[dotSize];
+                
                 const handleClickNumber = (num) => {
                     if (!started) {
                         // First click - set starting position
@@ -167,18 +214,16 @@
                         // Clicking the red dot - reset
                         resetLab();
                     } else {
-                        // Clicking anywhere else - take a step
-                        if (steps < subtractNum) {
-                            if (direction === 'back') {
-                                if (currentPosition > 0) {
-                                    setCurrentPosition(currentPosition - 1);
-                                    setSteps(steps + 1);
-                                }
-                            } else {
-                                if (currentPosition < maxNum) {
-                                    setCurrentPosition(currentPosition + 1);
-                                    setSteps(steps + 1);
-                                }
+                        // Clicking anywhere else - take a step (no limit)
+                        if (direction === 'back') {
+                            if (currentPosition > 0) {
+                                setCurrentPosition(currentPosition - 1);
+                                setSteps(steps + 1);
+                            }
+                        } else {
+                            if (currentPosition < maxNum) {
+                                setCurrentPosition(currentPosition + 1);
+                                setSteps(steps + 1);
                             }
                         }
                     }
@@ -220,26 +265,28 @@
                                         <p className="text-lg">לחץ על הציר כדי לצעוד או השתמש בכפתור</p>
                                         <p className="text-lg">Click on axis to step or use button</p>
                                         <p className="text-sm text-gray-600">לחץ על הנקודה האדומה כדי לאפס / Click red dot to reset</p>
+                                        {showStepCounter && (
+                                            <p className="text-xl font-bold text-green-600">
+                                                צעדים: {steps} / Steps: {steps}
+                                            </p>
+                                        )}
                                     </div>
-                                    <div className="flex justify-center gap-4">
+                                    <div className="flex justify-center gap-4 flex-wrap items-center">
                                         <button
                                             onClick={() => {
-                                                if (steps < subtractNum) {
-                                                    if (direction === 'back') {
-                                                        if (currentPosition > 0) {
-                                                            setCurrentPosition(currentPosition - 1);
-                                                            setSteps(steps + 1);
-                                                        }
-                                                    } else {
-                                                        if (currentPosition < maxNum) {
-                                                            setCurrentPosition(currentPosition + 1);
-                                                            setSteps(steps + 1);
-                                                        }
+                                                if (direction === 'back') {
+                                                    if (currentPosition > 0) {
+                                                        setCurrentPosition(currentPosition - 1);
+                                                        setSteps(steps + 1);
+                                                    }
+                                                } else {
+                                                    if (currentPosition < maxNum) {
+                                                        setCurrentPosition(currentPosition + 1);
+                                                        setSteps(steps + 1);
                                                     }
                                                 }
                                             }}
-                                            disabled={steps >= subtractNum}
-                                            className={`px-8 py-4 rounded-lg text-2xl font-bold disabled:bg-gray-300 disabled:cursor-not-allowed ${
+                                            className={`px-8 py-4 rounded-lg text-2xl font-bold ${
                                                 direction === 'back'
                                                     ? 'bg-red-500 text-white hover:bg-red-600'
                                                     : 'bg-green-500 text-white hover:bg-green-600'
@@ -247,6 +294,23 @@
                                         >
                                             {direction === 'back' ? '⬅️ אחורה / Back' : '➡️ קדימה / Up'}
                                         </button>
+                                        <button
+                                            onClick={resetLab}
+                                            className="px-6 py-4 bg-blue-500 text-white rounded-lg text-xl hover:bg-blue-600"
+                                        >
+                                            🔄 איפוס / Reset
+                                        </button>
+                                    </div>
+                                    <div className="flex justify-center">
+                                        <label className="flex items-center gap-2 text-lg bg-white px-4 py-2 rounded-lg border-2 border-gray-300">
+                                            <input
+                                                type="checkbox"
+                                                checked={showStepCounter}
+                                                onChange={(e) => setShowStepCounter(e.target.checked)}
+                                                className="w-5 h-5"
+                                            />
+                                            <span>הצג ספירת צעדים / Show Step Counter</span>
+                                        </label>
                                     </div>
                                 </div>
                             )}
@@ -294,7 +358,7 @@
                                                 cy="60%" 
                                                 r="15" 
                                                 fill="transparent"
-                                                className={started && steps < subtractNum ? "cursor-pointer hover:fill-blue-100" : started ? "cursor-not-allowed" : "cursor-pointer hover:fill-blue-200"}
+                                                className={started ? "cursor-pointer hover:fill-blue-100" : "cursor-pointer hover:fill-blue-200"}
                                                 onClick={() => handleClickNumber(i)}
                                             />
                                             
@@ -303,7 +367,7 @@
                                                 <circle 
                                                     cx={`${x}%`} 
                                                     cy="60%" 
-                                                    r="12" 
+                                                    r={sizes.starting} 
                                                     fill="#ef4444"
                                                     className="cursor-pointer hover:opacity-80"
                                                     style={{ pointerEvents: 'none' }}
@@ -312,12 +376,12 @@
                                             
                                             {/* Current position - blue dot */}
                                             {isCurrent && (
-                                                <circle cx={`${x}%`} cy="60%" r="10" fill="#3b82f6" style={{ pointerEvents: 'none' }} />
+                                                <circle cx={`${x}%`} cy="60%" r={sizes.current} fill="#3b82f6" style={{ pointerEvents: 'none' }} />
                                             )}
                                             
                                             {/* Green dots for intermediate positions */}
                                             {isInPath && (
-                                                <circle cx={`${x}%`} cy="60%" r="6" fill="#10b981" style={{ pointerEvents: 'none' }} />
+                                                <circle cx={`${x}%`} cy="60%" r={sizes.path} fill="#10b981" style={{ pointerEvents: 'none' }} />
                                             )}
                                         </g>
                                     );
@@ -330,6 +394,16 @@
 
             const ApplesTab = () => {
                 const apples = Array.from({ length: startNum }, (_, i) => i);
+                
+                // Object names in Hebrew and English
+                const objectNames = {
+                    apple: { he: 'תפוחים', en: 'apples', emoji: '🍎', color: '#ef4444' },
+                    orange: { he: 'תפוזים', en: 'oranges', emoji: '🍊', color: '#f97316' },
+                    banana: { he: 'בננות', en: 'bananas', emoji: '🍌', color: '#fbbf24' },
+                    strawberry: { he: 'תותים', en: 'strawberries', emoji: '🍓', color: '#ef4444' },
+                    ball: { he: 'כדורים', en: 'balls', emoji: '⚽', color: '#3b82f6' }
+                };
+                const obj = objectNames[objectType];
                 
                 const handleAppleClick = (index) => {
                     if (removedApples.includes(index)) {
@@ -398,22 +472,22 @@
                         <div className="text-center space-y-2">
                             {appleMode === 'delete' ? (
                                 <>
-                                    <p className="text-lg">יש לך {startNum} תפוחים, הוצא {subtractNum} תפוחים</p>
-                                    <p className="text-lg">You have {startNum} apples, remove {subtractNum} apples</p>
-                                    {startNum > 0 && <p className="text-md text-gray-600">לחץ על תפוח כדי להוציא אותו / Click an apple to remove it</p>}
+                                    <p className="text-lg">יש לך {startNum} {obj.he}, הוצא {subtractNum} {obj.he}</p>
+                                    <p className="text-lg">You have {startNum} {obj.en}, remove {subtractNum} {obj.en}</p>
+                                    {startNum > 0 && <p className="text-md text-gray-600">לחץ על {obj.emoji} כדי להוציא אותו / Click {obj.emoji} to remove it</p>}
                                 </>
                             ) : (
                                 <>
-                                    <p className="text-lg">ספור את התפוחים שנשארו</p>
-                                    <p className="text-lg">Count the remaining apples</p>
-                                    {startNum > 0 && <p className="text-md text-gray-600">לחץ על תפוח כדי לספור אותו / Click an apple to count it</p>}
+                                    <p className="text-lg">ספור את ה{obj.he} שנשארו</p>
+                                    <p className="text-lg">Count the remaining {obj.en}</p>
+                                    {startNum > 0 && <p className="text-md text-gray-600">לחץ על {obj.emoji} כדי לספור אותו / Click {obj.emoji} to count it</p>}
                                 </>
                             )}
                         </div>
                         
                         <div className="bg-green-50 rounded-lg p-8 min-h-[300px] flex items-center justify-center">
                             {startNum === 0 ? (
-                                <p className="text-2xl text-gray-500">אין תפוחים / No apples</p>
+                                <p className="text-2xl text-gray-500">אין {obj.he} / No {obj.en}</p>
                             ) : (
                                 <div className="grid grid-cols-5 gap-4 max-w-md">
                                     {apples.map((i) => {
@@ -425,23 +499,21 @@
                                             <button
                                                 key={i}
                                                 onClick={() => handleAppleClick(i)}
-                                                className={`relative transform transition-all ${
+                                                className={`relative transform transition-all text-5xl ${
                                                     isRemoved 
                                                         ? 'opacity-30 scale-75' 
                                                         : 'opacity-100 scale-100 hover:scale-110'
                                                 }`}
+                                                style={{ 
+                                                    filter: isCounted ? 'brightness(1.2) contrast(1.2)' : 'none'
+                                                }}
                                             >
-                                                <Apple 
-                                                    size={48} 
-                                                    className={
-                                                        isRemoved 
-                                                            ? 'text-gray-400' 
-                                                            : isCounted 
-                                                                ? 'text-green-500' 
-                                                                : 'text-red-500'
-                                                    }
-                                                    fill={isRemoved ? 'none' : 'currentColor'}
-                                                />
+                                                <span style={{ 
+                                                    filter: isRemoved ? 'grayscale(100%)' : 'none',
+                                                    display: 'inline-block'
+                                                }}>
+                                                    {obj.emoji}
+                                                </span>
                                                 {isCounted && showAppleNumbers && (
                                                     <div className="absolute inset-0 flex items-center justify-center">
                                                         <span className="text-2xl font-bold text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
@@ -744,6 +816,7 @@
                     <div className="space-y-8">
                         <div className="text-center">
                             <h2 className="text-2xl font-bold text-gray-800 mb-4">הגדרות / Settings</h2>
+                            <p className="text-sm text-gray-600">ההגדרות נשמרות אוטומטית / Settings are saved automatically</p>
                         </div>
                         
                         <div className="bg-blue-50 rounded-lg p-6 space-y-6">
@@ -817,9 +890,55 @@
                                 </div>
                             </div>
                             
+                            <div className="border-t-2 border-blue-200 pt-6">
+                                <h3 className="text-xl font-semibold mb-4 text-center">גודל נקודות ציר / Axis Dot Size</h3>
+                                <div className="flex justify-center gap-4 flex-wrap">
+                                    {['small', 'medium', 'large'].map(size => (
+                                        <button
+                                            key={size}
+                                            onClick={() => setDotSize(size)}
+                                            className={`px-6 py-3 rounded-lg text-lg font-semibold ${
+                                                dotSize === size
+                                                    ? 'bg-blue-500 text-white'
+                                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                            }`}
+                                        >
+                                            {size === 'small' ? 'קטן / Small' : size === 'medium' ? 'בינוני / Medium' : 'גדול / Large'}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            <div className="border-t-2 border-blue-200 pt-6">
+                                <h3 className="text-xl font-semibold mb-4 text-center">סוג אובייקט / Object Type</h3>
+                                <div className="flex justify-center gap-3 flex-wrap">
+                                    {[
+                                        { type: 'apple', emoji: '🍎', label: 'תפוח / Apple' },
+                                        { type: 'orange', emoji: '🍊', label: 'תפוז / Orange' },
+                                        { type: 'banana', emoji: '🍌', label: 'בננה / Banana' },
+                                        { type: 'strawberry', emoji: '🍓', label: 'תות / Strawberry' },
+                                        { type: 'ball', emoji: '⚽', label: 'כדור / Ball' }
+                                    ].map(item => (
+                                        <button
+                                            key={item.type}
+                                            onClick={() => setObjectType(item.type)}
+                                            className={`px-5 py-3 rounded-lg text-lg font-semibold flex items-center gap-2 ${
+                                                objectType === item.type
+                                                    ? 'bg-green-500 text-white'
+                                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                            }`}
+                                        >
+                                            <span className="text-2xl">{item.emoji}</span>
+                                            <span className="text-sm">{item.label}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            
                             <div className="text-center text-sm text-gray-600 pt-4">
                                 <p>ברירת מחדל: מספר ראשון 5-13, חיסור 0-13</p>
                                 <p>Default: First number 5-13, Subtract 0-13</p>
+                                <p>נקודות בינוניות, תפוחים / Medium dots, Apples</p>
                             </div>
                         </div>
                     </div>
@@ -828,7 +947,7 @@
 
             return (
                 <div className="max-w-4xl mx-auto p-6 bg-white min-h-screen" dir="rtl">
-                    <h1 className="text-4xl font-bold text-center mb-8 text-blue-600">🟢 VERSION 3.2 🟢<br/>
+                    <h1 className="text-4xl font-bold text-center mb-8 text-blue-600">🎯 VERSION 4.1 🎯<br/>
                         מעבדת החיסור / Subtraction Lab
                     </h1>
                     
@@ -924,7 +1043,11 @@
                                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                             }`}
                         >
-                            🍎 תפוחים / Apples
+                            {objectType === 'apple' ? '🍎 תפוחים / Apples' :
+                             objectType === 'orange' ? '🍊 תפוזים / Oranges' :
+                             objectType === 'banana' ? '🍌 בננות / Bananas' :
+                             objectType === 'strawberry' ? '🍓 תותים / Strawberries' :
+                             '⚽ כדורים / Balls'}
                         </button>
                         <button
                             onClick={() => setActiveTab('fingers')}
