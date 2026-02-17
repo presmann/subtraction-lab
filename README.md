@@ -34,7 +34,7 @@
 ### Step 5: Get Your Live URL! 🎉
 Your app is now live at:
 ```
-https://YOUR-USERNAME.github.io/subtraction-lab
+https://presmann.github.io/subtraction-lab
 ```
 
 For example, if your GitHub username is `noam123`, your URL will be:
