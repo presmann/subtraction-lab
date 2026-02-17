@@ -21,22 +21,6 @@
 <body>
     <div id="root"></div>
 
-    <script>
-        // Disable F5 and Ctrl+R refresh
-        document.addEventListener('keydown', function(event) {
-            // F5 key
-            if (event.key === 'F5' || event.keyCode === 116) {
-                event.preventDefault();
-                return false;
-            }
-            // Ctrl+R or Cmd+R
-            if ((event.ctrlKey || event.metaKey) && (event.key === 'r' || event.keyCode === 82)) {
-                event.preventDefault();
-                return false;
-            }
-        });
-    </script>
-
     <script type="text/babel">
         const { useState, useEffect } = React;
 
