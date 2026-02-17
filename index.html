@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מעבדת החיסור / Subtraction Lab</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+                'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+                sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Lucide React icons as inline SVG components
+        const Minus = ({ size = 24, className = '' }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+        );
+
+        const Apple = ({ size = 24, className = '', fill = 'none' }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M12 20.94c1.5 0 2.75 1.06 4 1.06 3 0 6-8 6-12.22A4.91 4.91 0 0 0 17 5c-2.22 0-4 1.44-5 2-1-.56-2.78-2-5-2a4.9 4.9 0 0 0-5 4.78C2 14 5 22 8 22c1.25 0 2.5-1.06 4-1.06Z"></path>
+                <path d="M10 2c1 .5 2 2 2 5"></path>
+            </svg>
+        );
+
+        function SubtractionLab() {
+            const [startNum, setStartNum] = useState(9);
+            const [subtractNum, setSubtractNum] = useState(2);
+            const [activeTab, setActiveTab] = useState('numberline');
+            const [userAnswer, setUserAnswer] = useState('');
+            const [showResult, setShowResult] = useState(false);
+            const [direction, setDirection] = useState('back');
+            
+            const [currentPosition, setCurrentPosition] = useState(null);
+            const [steps, setSteps] = useState(0);
+            const [startingPosition, setStartingPosition] = useState(null);
+            
+            const [removedApples, setRemovedApples] = useState([]);
+            const [appleMode, setAppleMode] = useState('delete');
+            const [showAppleNumbers, setShowAppleNumbers] = useState(false);
+            const [countedApples, setCountedApples] = useState([]);
+            
+            const [closedFingers, setClosedFingers] = useState([]);
+            const [fingerMode, setFingerMode] = useState('mark');
+            const [showFingerNumbers, setShowFingerNumbers] = useState(false);
+            const [countedFingers, setCountedFingers] = useState([]);
+            
+            const correctAnswer = startNum - subtractNum;
+            
+            const resetLab = () => {
+                setCurrentPosition(null);
+                setSteps(0);
+                setStartingPosition(null);
+                setRemovedApples([]);
+                setClosedFingers([]);
+                setCountedApples([]);
+                setCountedFingers([]);
+            };
+            
+            const handleStartNumChange = (e) => {
+                const value = e.target.value;
+                if (value === '') {
+                    setStartNum(0);
+                } else {
+                    const num = parseInt(value, 10);
+                    if (!isNaN(num) && num >= 0 && num <= 20) {
+                        setStartNum(num);
+                    }
+                }
+            };
+            
+            const handleSubtractNumChange = (e) => {
+                const value = e.target.value;
+                if (value === '') {
+                    setSubtractNum(0);
+                } else {
+                    const num = parseInt(value, 10);
+                    if (!isNaN(num) && num >= 0 && num <= startNum) {
+                        setSubtractNum(num);
+                    }
+                }
+            };
+
+            useEffect(() => {
+                resetLab();
+                setUserAnswer('');
+                setShowResult(false);
+                setAppleMode('delete');
+                setShowAppleNumbers(false);
+                setFingerMode('mark');
+                setShowFingerNumbers(false);
+            }, [startNum, subtractNum]);
+
+            const NumberLineTab = () => {
+                const maxNum = Math.max(startNum + 2, 10);
+                const started = currentPosition !== null;
+                
+                const handleClickNumber = (num) => {
+                    if (!started) {
+                        setStartingPosition(num);
+                        setCurrentPosition(num);
+                        setSteps(0);
+                    }
+                };
+                
+                const handleStep = () => {
+                    if (direction === 'back') {
+                        if (currentPosition > 0 && steps < subtractNum) {
+                            setCurrentPosition(currentPosition - 1);
+                            setSteps(steps + 1);
+                        }
+                    } else {
+                        if (currentPosition < maxNum && steps < subtractNum) {
+                            setCurrentPosition(currentPosition + 1);
+                            setSteps(steps + 1);
+                        }
+                    }
+                };
+                
+                return (
+                    <div className="space-y-6">
+                        <div className="text-center space-y-3">
+                            {!started ? (
+                                <>
+                                    <p className="text-lg">בחר מספר התחלה / Choose starting number</p>
+                                    <div className="flex justify-center gap-4 items-center">
+                                        <button
+                                            onClick={() => setDirection('back')}
+                                            className={`px-6 py-3 rounded-lg text-lg font-semibold ${
+                                                direction === 'back' 
+                                                    ? 'bg-red-500 text-white' 
+                                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                            }`}
+                                        >
+                                            ⬅️ צעד אחורה / Step Back
+                                        </button>
+                                        <button
+                                            onClick={() => setDirection('up')}
+                                            className={`px-6 py-3 rounded-lg text-lg font-semibold ${
+                                                direction === 'up' 
+                                                    ? 'bg-green-500 text-white' 
+                                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                            }`}
+                                        >
+                                            ➡️ צעד קדימה / Step Up
+                                        </button>
+                                    </div>
+                                    <p className="text-md text-gray-600">
+                                        {direction === 'back' 
+                                            ? 'מתחילים גבוה, צועדים למטה / Start high, step down'
+                                            : 'מתחילים נמוך, צועדים למעלה / Start low, step up'
+                                        }
+                                    </p>
+                                </>
+                            ) : (
+                                <div className="flex justify-center gap-4">
+                                    <button
+                                        onClick={handleStep}
+                                        disabled={steps >= subtractNum}
+                                        className={`px-8 py-4 rounded-lg text-2xl font-bold disabled:bg-gray-300 disabled:cursor-not-allowed ${
+                                            direction === 'back'
+                                                ? 'bg-red-500 text-white hover:bg-red-600'
+                                                : 'bg-green-500 text-white hover:bg-green-600'
+                                        }`}
+                                    >
+                                        {direction === 'back' ? '⬅️ אחורה / Back' : '➡️ קדימה / Up'}
+                                    </button>
+                                    <button
+                                        onClick={resetLab}
+                                        className="px-6 py-4 bg-blue-500 text-white rounded-lg text-xl hover:bg-blue-600"
+                                    >
+                                        🔄 איפוס / Reset
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                        
+                        <div className="relative h-32 bg-gray-100 rounded-lg p-4">
+                            {!started && (
+                                <div className="absolute top-2 left-1/2 transform -translate-x-1/2 text-purple-600 font-semibold text-center">
+                                    לחץ על מספר להתחלה<br/>Click a number to start
+                                </div>
+                            )}
+                            <svg className="w-full h-full">
+                                <line x1="5%" y1="60%" x2="95%" y2="60%" stroke="#333" strokeWidth="3" />
+                                
+                                {started && steps > 0 && (
+                                    <line 
+                                        x1={`${5 + (90 / maxNum) * Math.min(startingPosition, currentPosition)}%`}
+                                        y1="60%" 
+                                        x2={`${5 + (90 / maxNum) * Math.max(startingPosition, currentPosition)}%`}
+                                        y2="60%" 
+                                        stroke="#10b981" 
+                                        strokeWidth="6" 
+                                    />
+                                )}
+                                
+                                {Array.from({ length: maxNum + 1 }, (_, i) => {
+                                    const x = 5 + (90 / maxNum) * i;
+                                    const isStarting = started && i === startingPosition;
+                                    const isCurrent = started && i === currentPosition && i !== startingPosition;
+                                    const isInPath = started && steps > 0 && (
+                                        (direction === 'back' && i < startingPosition && i > currentPosition) ||
+                                        (direction === 'up' && i > startingPosition && i < currentPosition)
+                                    );
+                                    
+                                    return (
+                                        <g key={i}>
+                                            <line x1={`${x}%`} y1="50%" x2={`${x}%`} y2="70%" stroke="#333" strokeWidth="2" />
+                                            <text x={`${x}%`} y="85%" textAnchor="middle" className="text-lg font-bold">
+                                                {i}
+                                            </text>
+                                            
+                                            {!started && (
+                                                <circle 
+                                                    cx={`${x}%`} 
+                                                    cy="60%" 
+                                                    r="15" 
+                                                    fill="transparent"
+                                                    className="cursor-pointer hover:fill-blue-200"
+                                                    onClick={() => handleClickNumber(i)}
+                                                />
+                                            )}
+                                            
+                                            {isStarting && (
+                                                <circle cx={`${x}%`} cy="60%" r="12" fill="#ef4444" />
+                                            )}
+                                            
+                                            {isCurrent && (
+                                                <circle cx={`${x}%`} cy="60%" r="10" fill="#3b82f6" />
+                                            )}
+                                            
+                                            {isInPath && (
+                                                <circle cx={`${x}%`} cy="60%" r="6" fill="#10b981" />
+                                            )}
+                                        </g>
+                                    );
+                                })}
+                            </svg>
+                        </div>
+                    </div>
+                );
+            };
+
+            const ApplesTab = () => {
+                const apples = Array.from({ length: startNum }, (_, i) => i);
+                
+                const handleAppleClick = (index) => {
+                    if (removedApples.includes(index)) {
+                        if (appleMode === 'delete') {
+                            setRemovedApples(removedApples.filter(i => i !== index));
+                        }
+                        return;
+                    }
+                    
+                    if (appleMode === 'delete') {
+                        if (removedApples.length < subtractNum) {
+                            setRemovedApples([...removedApples, index]);
+                        }
+                    } else {
+                        if (countedApples.includes(index)) {
+                            setCountedApples(countedApples.filter(i => i !== index));
+                        } else {
+                            setCountedApples([...countedApples, index]);
+                        }
+                    }
+                };
+                
+                return (
+                    <div className="space-y-6">
+                        <div className="flex justify-center gap-4 items-center flex-wrap">
+                            <button
+                                onClick={() => {
+                                    setAppleMode('delete');
+                                    setCountedApples([]);
+                                }}
+                                className={`px-6 py-3 rounded-lg text-lg font-semibold flex items-center gap-2 ${
+                                    appleMode === 'delete'
+                                        ? 'bg-red-500 text-white'
+                                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                }`}
+                            >
+                                🗑️ מחק / Delete
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setAppleMode('count');
+                                    setCountedApples([]);
+                                }}
+                                className={`px-6 py-3 rounded-lg text-lg font-semibold flex items-center gap-2 ${
+                                    appleMode === 'count'
+                                        ? 'bg-green-500 text-white'
+                                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                }`}
+                            >
+                                🔢 ספור / Count
+                            </button>
+                            
+                            {appleMode === 'count' && (
+                                <label className="flex items-center gap-2 text-lg bg-white px-4 py-2 rounded-lg border-2 border-gray-300">
+                                    <input
+                                        type="checkbox"
+                                        checked={showAppleNumbers}
+                                        onChange={(e) => setShowAppleNumbers(e.target.checked)}
+                                        className="w-5 h-5"
+                                    />
+                                    <span>הצג מספרים / Show Numbers</span>
+                                </label>
+                            )}
+                        </div>
+                        
+                        <div className="text-center space-y-2">
+                            {appleMode === 'delete' ? (
+                                <>
+                                    <p className="text-lg">יש לך {startNum} תפוחים, הוצא {subtractNum} תפוחים</p>
+                                    <p className="text-lg">You have {startNum} apples, remove {subtractNum} apples</p>
+                                    {startNum > 0 && <p className="text-md text-gray-600">לחץ על תפוח כדי להוציא אותו / Click an apple to remove it</p>}
+                                </>
+                            ) : (
+                                <>
+                                    <p className="text-lg">ספור את התפוחים שנשארו</p>
+                                    <p className="text-lg">Count the remaining apples</p>
+                                    {startNum > 0 && <p className="text-md text-gray-600">לחץ על תפוח כדי לספור אותו / Click an apple to count it</p>}
+                                </>
+                            )}
+                        </div>
+                        
+                        <div className="bg-green-50 rounded-lg p-8 min-h-[300px] flex items-center justify-center">
+                            {startNum === 0 ? (
+                                <p className="text-2xl text-gray-500">אין תפוחים / No apples</p>
+                            ) : (
+                                <div className="grid grid-cols-5 gap-4 max-w-md">
+                                    {apples.map((i) => {
+                                        const isRemoved = removedApples.includes(i);
+                                        const isCounted = appleMode === 'count' && countedApples.includes(i);
+                                        const countNumber = isCounted ? countedApples.indexOf(i) + 1 : null;
+                                        
+                                        return (
+                                            <button
+                                                key={i}
+                                                onClick={() => handleAppleClick(i)}
+                                                className={`relative transform transition-all ${
+                                                    isRemoved 
+                                                        ? 'opacity-30 scale-75' 
+                                                        : 'opacity-100 scale-100 hover:scale-110'
+                                                }`}
+                                            >
+                                                <Apple 
+                                                    size={48} 
+                                                    className={
+                                                        isRemoved 
+                                                            ? 'text-gray-400' 
+                                                            : isCounted 
+                                                                ? 'text-green-500' 
+                                                                : 'text-red-500'
+                                                    }
+                                                    fill={isRemoved ? 'none' : 'currentColor'}
+                                                />
+                                                {isCounted && showAppleNumbers && (
+                                                    <div className="absolute inset-0 flex items-center justify-center">
+                                                        <span className="text-2xl font-bold text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
+                                                            {countNumber}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                        
+                        <div className="text-center">
+                            <button
+                                onClick={resetLab}
+                                className="px-6 py-3 bg-blue-500 text-white rounded-lg text-xl hover:bg-blue-600"
+                            >
+                                🔄 איפוס / Reset
+                            </button>
+                        </div>
+                    </div>
+                );
+            };
+
+            const FingersTab = () => {
+                const numHands = Math.max(1, Math.ceil(startNum / 5));
+                
+                const handleFingerClick = (handIndex, fingerIndex) => {
+                    const globalIndex = handIndex * 5 + fingerIndex;
+                    if (globalIndex >= startNum) return;
+                    
+                    if (closedFingers.includes(globalIndex)) {
+                        if (fingerMode === 'mark') {
+                            setClosedFingers(closedFingers.filter(i => i !== globalIndex));
+                        }
+                        return;
+                    }
+                    
+                    if (fingerMode === 'mark') {
+                        if (closedFingers.length < subtractNum) {
+                            setClosedFingers([...closedFingers, globalIndex]);
+                        }
+                    } else {
+                        if (countedFingers.includes(globalIndex)) {
+                            setCountedFingers(countedFingers.filter(i => i !== globalIndex));
+                        } else {
+                            setCountedFingers([...countedFingers, globalIndex]);
+                        }
+                    }
+                };
+                
+                const Hand = ({ handIndex }) => {
+                    const Finger = ({ fingerIndex }) => {
+                        const globalIndex = handIndex * 5 + fingerIndex;
+                        const isAvailable = globalIndex < startNum;
+                        const positions = [
+                            { x: 5, width: 15 },
+                            { x: 23, width: 13 },
+                            { x: 39, width: 13 },
+                            { x: 55, width: 13 },
+                            { x: 71, width: 12 }
+                        ];
+                        const pos = positions[fingerIndex];
+                        const isClosed = closedFingers.includes(globalIndex);
+                        const isCounted = fingerMode === 'count' && countedFingers.includes(globalIndex);
+                        const countNumber = isCounted ? countedFingers.indexOf(globalIndex) + 1 : null;
+                        
+                        const opacity = isAvailable ? 1 : 0.2;
+                        const fingerColor = isAvailable 
+                            ? (isClosed ? '#9ca3af' : isCounted ? '#10b981' : '#fbbf24') 
+                            : '#e5e7eb';
+                        
+                        return (
+                            <g 
+                                onClick={() => isAvailable && handleFingerClick(handIndex, fingerIndex)} 
+                                className={isAvailable ? "cursor-pointer" : "cursor-not-allowed"}
+                                opacity={opacity}
+                            >
+                                <path
+                                    d={`
+                                        M ${pos.x} 70
+                                        L ${pos.x} 45
+                                        Q ${pos.x} 42 ${pos.x + pos.width/2} 40
+                                        Q ${pos.x + pos.width} 42 ${pos.x + pos.width} 45
+                                        L ${pos.x + pos.width} 70
+                                        Z
+                                    `}
+                                    fill={fingerColor}
+                                    stroke="#78716c"
+                                    strokeWidth={1.5}
+                                />
+                                
+                                <path
+                                    d={`
+                                        M ${pos.x + 1} 45
+                                        L ${pos.x + 1} 25
+                                        Q ${pos.x + 1} 20 ${pos.x + pos.width/2} 18
+                                        Q ${pos.x + pos.width - 1} 20 ${pos.x + pos.width - 1} 25
+                                        L ${pos.x + pos.width - 1} 45
+                                    `}
+                                    fill={fingerColor}
+                                    stroke="#78716c"
+                                    strokeWidth={1.5}
+                                />
+                                
+                                <ellipse
+                                    cx={pos.x + pos.width/2}
+                                    cy={18}
+                                    rx={pos.width/2 - 1}
+                                    ry={6}
+                                    fill={fingerColor}
+                                    stroke="#78716c"
+                                    strokeWidth={1.5}
+                                />
+                                
+                                <ellipse
+                                    cx={pos.x + pos.width/2}
+                                    cy={16}
+                                    rx={pos.width/3}
+                                    ry={3}
+                                    fill={isAvailable ? (isClosed ? '#d1d5db' : isCounted ? '#dcfce7' : '#fef3c7') : '#f3f4f6'}
+                                    stroke="#78716c"
+                                    strokeWidth={0.8}
+                                />
+                                
+                                {isAvailable && !isClosed && (
+                                    <>
+                                        <line 
+                                            x1={pos.x + 2} 
+                                            y1={45} 
+                                            x2={pos.x + pos.width - 2} 
+                                            y2={45} 
+                                            stroke={isCounted ? '#059669' : '#d97706'} 
+                                            strokeWidth={1}
+                                            opacity={0.6}
+                                        />
+                                        <line 
+                                            x1={pos.x + 2} 
+                                            y1={32} 
+                                            x2={pos.x + pos.width - 2} 
+                                            y2={32} 
+                                            stroke={isCounted ? '#059669' : '#d97706'} 
+                                            strokeWidth={0.8}
+                                            opacity={0.5}
+                                        />
+                                    </>
+                                )}
+                                
+                                {isClosed && isAvailable && (
+                                    <g>
+                                        <line 
+                                            x1={pos.x + 3} 
+                                            y1={38} 
+                                            x2={pos.x + pos.width - 3} 
+                                            y2={55} 
+                                            stroke="#ef4444" 
+                                            strokeWidth={2.5} 
+                                        />
+                                        <line 
+                                            x1={pos.x + pos.width - 3} 
+                                            y1={38} 
+                                            x2={pos.x + 3} 
+                                            y2={55} 
+                                            stroke="#ef4444" 
+                                            strokeWidth={2.5} 
+                                        />
+                                    </g>
+                                )}
+                                
+                                {isCounted && showFingerNumbers && isAvailable && (
+                                    <text 
+                                        x={pos.x + pos.width/2} 
+                                        y={50} 
+                                        textAnchor="middle" 
+                                        className="text-2xl font-bold"
+                                        fill="white"
+                                        stroke="#000"
+                                        strokeWidth={0.5}
+                                    >
+                                        {countNumber}
+                                    </text>
+                                )}
+                            </g>
+                        );
+                    };
+                    
+                    return (
+                        <svg viewBox="0 0 90 100" className="w-32 h-36">
+                            <ellipse cx="45" cy="82" rx="40" ry="16" fill="#fbbf24" stroke="#78716c" strokeWidth={2} />
+                            
+                            <path 
+                                d="M 15 75 Q 45 78 75 75" 
+                                stroke="#d97706" 
+                                strokeWidth={1} 
+                                fill="none" 
+                                opacity={0.4}
+                            />
+                            <path 
+                                d="M 20 82 Q 45 85 70 82" 
+                                stroke="#d97706" 
+                                strokeWidth={1} 
+                                fill="none" 
+                                opacity={0.3}
+                            />
+                            
+                            {Array.from({ length: 5 }, (_, i) => (
+                                <Finger key={i} fingerIndex={i} />
+                            ))}
+                        </svg>
+                    );
+                };
+                
+                return (
+                    <div className="space-y-6">
+                        <div className="flex justify-center gap-4 items-center flex-wrap">
+                            <button
+                                onClick={() => {
+                                    setFingerMode('mark');
+                                    setCountedFingers([]);
+                                }}
+                                className={`px-6 py-3 rounded-lg text-lg font-semibold flex items-center gap-2 ${
+                                    fingerMode === 'mark'
+                                        ? 'bg-red-500 text-white'
+                                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                }`}
+                            >
+                                ✕ סמן / Mark
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setFingerMode('count');
+                                    setCountedFingers([]);
+                                }}
+                                className={`px-6 py-3 rounded-lg text-lg font-semibold flex items-center gap-2 ${
+                                    fingerMode === 'count'
+                                        ? 'bg-green-500 text-white'
+                                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                }`}
+                            >
+                                🔢 ספור / Count
+                            </button>
+                            
+                            {fingerMode === 'count' && (
+                                <label className="flex items-center gap-2 text-lg bg-white px-4 py-2 rounded-lg border-2 border-gray-300">
+                                    <input
+                                        type="checkbox"
+                                        checked={showFingerNumbers}
+                                        onChange={(e) => setShowFingerNumbers(e.target.checked)}
+                                        className="w-5 h-5"
+                                    />
+                                    <span>הצג מספרים / Show Numbers</span>
+                                </label>
+                            )}
+                        </div>
+                        
+                        <div className="text-center space-y-2">
+                            {fingerMode === 'mark' ? (
+                                <>
+                                    <p className="text-lg">יש לך {startNum} אצבעות, סמן {subtractNum} אצבעות</p>
+                                    <p className="text-lg">You have {startNum} fingers, mark {subtractNum} fingers</p>
+                                    {startNum > 0 && <p className="text-md text-gray-600">לחץ על אצבע כדי לסמן אותה / Click a finger to mark it</p>}
+                                </>
+                            ) : (
+                                <>
+                                    <p className="text-lg">ספור את האצבעות שנשארו</p>
+                                    <p className="text-lg">Count the remaining fingers</p>
+                                    {startNum > 0 && <p className="text-md text-gray-600">לחץ על אצבע כדי לספור אותה / Click a finger to count it</p>}
+                                </>
+                            )}
+                        </div>
+                        
+                        <div className="bg-amber-50 rounded-lg p-8">
+                            {startNum === 0 ? (
+                                <p className="text-center text-2xl text-gray-500">אין אצבעות / No fingers</p>
+                            ) : (
+                                <div className="flex flex-wrap justify-center gap-8">
+                                    {Array.from({ length: numHands }, (_, i) => (
+                                        <Hand key={i} handIndex={i} />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                        
+                        <div className="text-center">
+                            <button
+                                onClick={resetLab}
+                                className="px-6 py-3 bg-blue-500 text-white rounded-lg text-xl hover:bg-blue-600"
+                            >
+                                🔄 איפוס / Reset
+                            </button>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="max-w-4xl mx-auto p-6 bg-white min-h-screen" dir="rtl">
+                    <h1 className="text-4xl font-bold text-center mb-8 text-blue-600">
+                        מעבדת החיסור / Subtraction Lab
+                    </h1>
+                    
+                    <div className="bg-purple-50 rounded-lg p-6 mb-8">
+                        <div className="flex items-center justify-center gap-4 flex-wrap" dir="ltr">
+                            <div className="text-center">
+                                <label className="block text-sm mb-1">Start with / מתחילים עם</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    max="20"
+                                    value={startNum}
+                                    onChange={handleStartNumChange}
+                                    className="w-24 px-3 py-2 text-2xl text-center border-2 border-purple-300 rounded"
+                                />
+                            </div>
+                            
+                            <Minus size={32} className="text-purple-600 mt-5" />
+                            
+                            <div className="text-center">
+                                <label className="block text-sm mb-1">Subtract / מחסירים</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    max={startNum}
+                                    value={subtractNum}
+                                    onChange={handleSubtractNumChange}
+                                    className="w-24 px-3 py-2 text-2xl text-center border-2 border-purple-300 rounded"
+                                />
+                            </div>
+                            
+                            <div className="text-3xl font-bold mt-5">=</div>
+                            
+                            <div className="text-center">
+                                <label className="block text-sm mb-1">Answer / תשובה</label>
+                                <input
+                                    type="number"
+                                    value={userAnswer}
+                                    onChange={(e) => setUserAnswer(e.target.value)}
+                                    placeholder="?"
+                                    className="w-24 px-3 py-2 text-2xl text-center border-2 border-purple-300 rounded"
+                                />
+                            </div>
+                            
+                            <button
+                                onClick={() => setShowResult(true)}
+                                disabled={userAnswer === ''}
+                                className="px-6 py-2 mt-5 bg-purple-500 text-white rounded-lg hover:bg-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                            >
+                                בדוק / Check
+                            </button>
+                        </div>
+                        
+                        {showResult && userAnswer !== '' && (
+                            <div className="text-center mt-4">
+                                {parseInt(userAnswer) === correctAnswer ? (
+                                    <p className="text-2xl font-bold text-green-600">
+                                        ✓ נכון! מעולה! / Correct! Excellent!
+                                    </p>
+                                ) : (
+                                    <p className="text-2xl font-bold text-red-600">
+                                        נסה שוב / Try again
+                                    </p>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                    
+                    <div className="flex justify-center gap-2 mb-6 flex-wrap">
+                        <button
+                            onClick={() => setActiveTab('numberline')}
+                            className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
+                                activeTab === 'numberline'
+                                    ? 'bg-blue-500 text-white'
+                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            }`}
+                        >
+                            ציר מספרים / Number Line
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('apples')}
+                            className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
+                                activeTab === 'apples'
+                                    ? 'bg-red-500 text-white'
+                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            }`}
+                        >
+                            🍎 תפוחים / Apples
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('fingers')}
+                            className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
+                                activeTab === 'fingers'
+                                    ? 'bg-amber-500 text-white'
+                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            }`}
+                        >
+                            ✋ אצבעות / Fingers
+                        </button>
+                    </div>
+                    
+                    <div className="bg-white rounded-lg shadow-lg p-6">
+                        {activeTab === 'numberline' && <NumberLineTab />}
+                        {activeTab === 'apples' && <ApplesTab />}
+                        {activeTab === 'fingers' && <FingersTab />}
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<SubtractionLab />, document.getElementById('root'));
+    </script>
+</body>
+</html>
