@@ -94,10 +94,16 @@
                 const newSeed = randomSeed + 1;
                 setRandomSeed(newSeed);
                 
+                // First, draw the first number from its range
                 const newStartNum = seededRandom(firstNumMin, firstNumMax, newSeed);
-                const maxSubtract = Math.min(subtractMax, newStartNum);
-                const minSubtract = Math.min(subtractMin, maxSubtract);
-                const newSubtractNum = seededRandom(minSubtract, maxSubtract, newSeed * 2);
+                
+                // Then, draw the second number with constraints based on first number
+                // Lower bound: max(0, subtractMin) - can't be negative
+                // Upper bound: min(newStartNum, subtractMax) - can't be more than first number
+                const actualSubtractMin = Math.max(0, subtractMin);
+                const actualSubtractMax = Math.min(newStartNum, subtractMax);
+                
+                const newSubtractNum = seededRandom(actualSubtractMin, actualSubtractMax, newSeed * 2);
                 
                 setStartNum(newStartNum);
                 setSubtractNum(newSubtractNum);
@@ -209,10 +215,39 @@
                                     </div>
                                 </>
                             ) : (
-                                <div className="text-center space-y-2">
-                                    <p className="text-lg">לחץ על הציר כדי לצעוד</p>
-                                    <p className="text-lg">Click on axis to step</p>
-                                    <p className="text-sm text-gray-600">לחץ על הנקודה האדומה כדי לאפס / Click red dot to reset</p>
+                                <div className="space-y-3">
+                                    <div className="text-center space-y-2">
+                                        <p className="text-lg">לחץ על הציר כדי לצעוד או השתמש בכפתור</p>
+                                        <p className="text-lg">Click on axis to step or use button</p>
+                                        <p className="text-sm text-gray-600">לחץ על הנקודה האדומה כדי לאפס / Click red dot to reset</p>
+                                    </div>
+                                    <div className="flex justify-center gap-4">
+                                        <button
+                                            onClick={() => {
+                                                if (steps < subtractNum) {
+                                                    if (direction === 'back') {
+                                                        if (currentPosition > 0) {
+                                                            setCurrentPosition(currentPosition - 1);
+                                                            setSteps(steps + 1);
+                                                        }
+                                                    } else {
+                                                        if (currentPosition < maxNum) {
+                                                            setCurrentPosition(currentPosition + 1);
+                                                            setSteps(steps + 1);
+                                                        }
+                                                    }
+                                                }
+                                            }}
+                                            disabled={steps >= subtractNum}
+                                            className={`px-8 py-4 rounded-lg text-2xl font-bold disabled:bg-gray-300 disabled:cursor-not-allowed ${
+                                                direction === 'back'
+                                                    ? 'bg-red-500 text-white hover:bg-red-600'
+                                                    : 'bg-green-500 text-white hover:bg-green-600'
+                                            }`}
+                                        >
+                                            {direction === 'back' ? '⬅️ אחורה / Back' : '➡️ קדימה / Up'}
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -793,7 +828,7 @@
 
             return (
                 <div className="max-w-4xl mx-auto p-6 bg-white min-h-screen" dir="rtl">
-                    <h1 className="text-4xl font-bold text-center mb-8 text-blue-600">🟢 VERSION 3.1 🟢<br/>
+                    <h1 className="text-4xl font-bold text-center mb-8 text-blue-600">🟢 VERSION 3.2 🟢<br/>
                         מעבדת החיסור / Subtraction Lab
                     </h1>
                     
