@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>מעבדת החיסור / Subtraction Lab</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="alternate icon" type="image/png" href="favicon.png">
@@ -401,7 +401,12 @@
                     orange: { he: 'תפוזים', en: 'oranges', emoji: '🍊', color: '#f97316' },
                     banana: { he: 'בננות', en: 'bananas', emoji: '🍌', color: '#fbbf24' },
                     strawberry: { he: 'תותים', en: 'strawberries', emoji: '🍓', color: '#ef4444' },
-                    ball: { he: 'כדורים', en: 'balls', emoji: '⚽', color: '#3b82f6' }
+                    ball: { he: 'כדורים', en: 'balls', emoji: '⚽', color: '#3b82f6' },
+                    butterfly: { he: 'פרפרים', en: 'butterflies', emoji: '🦋', color: '#a855f7' },
+                    unicorn: { he: 'חדי קרן', en: 'unicorns', emoji: '🦄', color: '#ec4899' },
+                    mouse: { he: 'עכברים', en: 'mice', emoji: '🐭', color: '#94a3b8' },
+                    dress: { he: 'שמלות', en: 'dresses', emoji: '👗', color: '#f472b6' },
+                    shoe: { he: 'נעליים', en: 'shoes', emoji: '👠', color: '#e879f9' }
                 };
                 const obj = objectNames[objectType];
                 
@@ -917,14 +922,19 @@
                                         { type: 'orange', emoji: '🍊', label: 'תפוז / Orange' },
                                         { type: 'banana', emoji: '🍌', label: 'בננה / Banana' },
                                         { type: 'strawberry', emoji: '🍓', label: 'תות / Strawberry' },
-                                        { type: 'ball', emoji: '⚽', label: 'כדור / Ball' }
+                                        { type: 'ball', emoji: '⚽', label: 'כדור / Ball' },
+                                        { type: 'butterfly', emoji: '🦋', label: 'פרפר / Butterfly' },
+                                        { type: 'unicorn', emoji: '🦄', label: 'חד קרן / Unicorn' },
+                                        { type: 'mouse', emoji: '🐭', label: 'עכבר / Mouse' },
+                                        { type: 'dress', emoji: '👗', label: 'שמלה / Dress' },
+                                        { type: 'shoe', emoji: '👠', label: 'נעל / Shoe' }
                                     ].map(item => (
                                         <button
                                             key={item.type}
                                             onClick={() => setObjectType(item.type)}
-                                            className={`px-5 py-3 rounded-lg text-lg font-semibold flex items-center gap-2 ${
+                                            className={`px-4 py-3 rounded-lg text-base font-semibold flex items-center gap-2 ${
                                                 objectType === item.type
-                                                    ? 'bg-green-500 text-white'
+                                                    ? 'bg-pink-500 text-white'
                                                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                                             }`}
                                         >
@@ -939,6 +949,7 @@
                                 <p>ברירת מחדל: מספר ראשון 5-13, חיסור 0-13</p>
                                 <p>Default: First number 5-13, Subtract 0-13</p>
                                 <p>נקודות בינוניות, תפוחים / Medium dots, Apples</p>
+                                <p className="text-pink-500 font-semibold mt-2">✨ אפשרויות חדשות לבנות! / New girly options! ✨</p>
                             </div>
                         </div>
                     </div>
@@ -947,7 +958,7 @@
 
             return (
                 <div className="max-w-4xl mx-auto p-6 bg-white min-h-screen" dir="rtl">
-                    <h1 className="text-4xl font-bold text-center mb-8 text-blue-600">🎯 VERSION 4.1 🎯<br/>
+                    <h1 className="text-4xl font-bold text-center mb-8 text-blue-600">💖 VERSION 4.5 💖<br/>
                         מעבדת החיסור / Subtraction Lab
                     </h1>
                     
@@ -1001,6 +1012,17 @@
                             </div>
                             
                             <button
+                                onClick={() => {
+                                    setUserAnswer('');
+                                    setShowResult(false);
+                                }}
+                                className="px-4 py-2 mt-5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-xl"
+                                title="מחק תשובה / Erase answer"
+                            >
+                                🧹
+                            </button>
+                            
+                            <button
                                 onClick={() => setShowResult(true)}
                                 disabled={userAnswer === ''}
                                 className="px-6 py-2 mt-5 bg-purple-500 text-white rounded-lg hover:bg-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
@@ -1047,7 +1069,12 @@
                              objectType === 'orange' ? '🍊 תפוזים / Oranges' :
                              objectType === 'banana' ? '🍌 בננות / Bananas' :
                              objectType === 'strawberry' ? '🍓 תותים / Strawberries' :
-                             '⚽ כדורים / Balls'}
+                             objectType === 'ball' ? '⚽ כדורים / Balls' :
+                             objectType === 'butterfly' ? '🦋 פרפרים / Butterflies' :
+                             objectType === 'unicorn' ? '🦄 חדי קרן / Unicorns' :
+                             objectType === 'mouse' ? '🐭 עכברים / Mice' :
+                             objectType === 'dress' ? '👗 שמלות / Dresses' :
+                             '👠 נעליים / Shoes'}
                         </button>
                         <button
                             onClick={() => setActiveTab('fingers')}
