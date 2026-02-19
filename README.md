@@ -122,4 +122,4 @@ Want a custom URL like `math.yourdomain.com`?
 
 Feel free to modify and use this app for educational purposes.
 
-Created with ❤️ for Adas
+Created with ❤️ for Hadas and Yaara
