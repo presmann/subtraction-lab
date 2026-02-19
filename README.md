@@ -1,6 +1,6 @@
 # Math Lab - GitHub Pages Deployment Guide
 
-מעבדת החיסור - מדריך פריסה ל-GitHub Pages
+מעבדת המתמטיקה - מדריך פריסה ל-GitHub Pages
 
 ## Quick Start - 5 Minutes to Live Site! 🚀
 
