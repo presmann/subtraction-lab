@@ -18,6 +18,37 @@
                 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
                 sans-serif;
         }
+
+        @keyframes fly-emoji {
+            0%   { transform: translate(-50%, -50%) rotate(var(--angle)) translateX(0px);    opacity: 1; font-size: 1.8rem; }
+            60%  { opacity: 1; }
+            100% { transform: translate(-50%, -50%) rotate(var(--angle)) translateX(320px); opacity: 0; font-size: 3rem; }
+        }
+        @keyframes celebration-bg-fade {
+            0%   { opacity: 1; }
+            70%  { opacity: 1; }
+            100% { opacity: 0; pointer-events: none; }
+        }
+        @keyframes correct-bounce {
+            0%,100% { transform: scale(1); }
+            30%     { transform: scale(1.25) rotate(-3deg); }
+            60%     { transform: scale(1.15) rotate(3deg); }
+        }
+        @keyframes wrong-shake {
+            0%,100% { transform: translateX(0); }
+            20%     { transform: translateX(-10px); }
+            40%     { transform: translateX(10px); }
+            60%     { transform: translateX(-7px); }
+            80%     { transform: translateX(7px); }
+        }
+        @keyframes score-pop {
+            0%   { transform: scale(1); }
+            50%  { transform: scale(1.4); }
+            100% { transform: scale(1); }
+        }
+        .correct-bounce { animation: correct-bounce 0.6s ease; }
+        .wrong-shake    { animation: wrong-shake 0.5s ease; }
+        .score-pop      { animation: score-pop 0.4s ease; }
     </style>
 </head>
 <body>
@@ -73,7 +104,32 @@
             const [countedFingers, setCountedFingers] = useState([]);
             
             const correctAnswer = startNum - subtractNum;
-            
+
+            // Score tracking
+            const [correctCount, setCorrectCount] = React.useState(0);
+            const [wrongCount, setWrongCount]     = React.useState(0);
+
+            // Celebration: { emojis: string[], key: number } | null
+            const [celebration, setCelebration] = React.useState(null);
+            const [resultAnimKey, setResultAnimKey] = React.useState(0);
+
+            // Celebration themes
+            const celebrationThemes = [
+                ['🎉','🎊','🎈','🎁','🎀'],
+                ['⭐','🌟','💫','✨','🌠'],
+                ['❤️','💕','💖','💗','💝'],
+                ['🦋','🌈','🌸','🌺','🌻'],
+                ['🎵','🎶','🎸','🎹','🎺'],
+                ['🍭','🍬','🍫','🧁','🍰'],
+            ];
+
+            const triggerCelebration = (objEmoji) => {
+                const baseTheme = celebrationThemes[Math.floor(Math.random() * celebrationThemes.length)];
+                const emojis = [...baseTheme, objEmoji, objEmoji];
+                setCelebration({ emojis, key: Date.now() });
+                setTimeout(() => setCelebration(null), 2600);
+            };
+
             // Initialize seed on first load from full timestamp
             useEffect(() => {
                 if (randomSeed === null) {
@@ -119,11 +175,31 @@
                 localStorage.setItem('subtractionLabSettings', JSON.stringify(settings));
             }, [firstNumMin, firstNumMax, subtractMin, subtractMax, dotSize, objectType]);
             
-            // Seeded random number generator
+            // Seeded random number generator - returns integer in [min, max]
             const seededRandom = (min, max, currentSeed) => {
                 const x = Math.sin(currentSeed) * 10000;
                 const random = x - Math.floor(x);
                 return Math.floor(random * (max - min + 1)) + min;
+            };
+
+            // Seeded random float in [0, 1)
+            const seededRandomFloat = (currentSeed) => {
+                const x = Math.sin(currentSeed) * 10000;
+                return x - Math.floor(x);
+            };
+
+            // Sample from a triangular distribution on [a, b] with mode c, given uniform u in [0,1)
+            // Returns a continuous value; caller should round to integer
+            const triangularSample = (a, b, c, u) => {
+                if (a === b) return a;
+                // Clamp mode to valid range
+                const mode = Math.max(a, Math.min(b, c));
+                const fc = (mode - a) / (b - a);
+                if (u < fc) {
+                    return a + Math.sqrt(u * (b - a) * (mode - a));
+                } else {
+                    return b - Math.sqrt((1 - u) * (b - a) * (b - mode));
+                }
             };
             
             // Generate new question
@@ -133,16 +209,30 @@
                 const newSeed = randomSeed + 1;
                 setRandomSeed(newSeed);
                 
-                // First, draw the first number from its range
+                // Draw the first number uniformly from its range
                 const newStartNum = seededRandom(firstNumMin, firstNumMax, newSeed);
                 
-                // Then, draw the second number with constraints based on first number
-                // Lower bound: max(0, subtractMin) - can't be negative
-                // Upper bound: min(newStartNum, subtractMax) - can't be more than first number
+                // Draw the second number from a triangular distribution:
+                // - Bounded to [actualSubtractMin, actualSubtractMax]
+                // - Mean targeted at newStartNum / 2
+                //   For triangular(a, b, c): mean = (a + b + c) / 3
+                //   => c = 3 * (newStartNum / 2) - a - b
                 const actualSubtractMin = Math.max(0, subtractMin);
                 const actualSubtractMax = Math.min(newStartNum, subtractMax);
-                
-                const newSubtractNum = seededRandom(actualSubtractMin, actualSubtractMax, newSeed * 2);
+
+                let newSubtractNum;
+                if (actualSubtractMin > actualSubtractMax) {
+                    // Degenerate range — clamp to nearest valid value
+                    newSubtractNum = Math.min(newStartNum, subtractMin);
+                } else if (actualSubtractMin === actualSubtractMax) {
+                    newSubtractNum = actualSubtractMin;
+                } else {
+                    const targetMean = newStartNum / 2;
+                    const mode = 3 * targetMean - actualSubtractMin - actualSubtractMax;
+                    const u = seededRandomFloat(newSeed * 2);
+                    const sample = triangularSample(actualSubtractMin, actualSubtractMax, mode, u);
+                    newSubtractNum = Math.round(sample);
+                }
                 
                 setStartNum(newStartNum);
                 setSubtractNum(newSubtractNum);
@@ -406,7 +496,13 @@
                     unicorn: { he: 'חדי קרן', en: 'unicorns', emoji: '🦄', color: '#ec4899' },
                     mouse: { he: 'עכברים', en: 'mice', emoji: '🐭', color: '#94a3b8' },
                     dress: { he: 'שמלות', en: 'dresses', emoji: '👗', color: '#f472b6' },
-                    shoe: { he: 'נעליים', en: 'shoes', emoji: '👠', color: '#e879f9' }
+                    shoe: { he: 'נעליים', en: 'shoes', emoji: '👠', color: '#e879f9' },
+                    cookie: { he: 'עוגיות', en: 'cookies', emoji: '🍪', color: '#a16207' },
+                    chair: { he: 'כיסאות', en: 'chairs', emoji: '🪑', color: '#78716c' },
+                    star: { he: 'כוכבים', en: 'stars', emoji: '⭐', color: '#eab308' },
+                    shirt: { he: 'חולצות', en: 'shirts', emoji: '👕', color: '#3b82f6' },
+                    trousers: { he: 'מכנסיים', en: 'trousers', emoji: '👖', color: '#1d4ed8' },
+                    clown: { he: 'ליצנים', en: 'clowns', emoji: '🤡', color: '#ec4899' }
                 };
                 const obj = objectNames[objectType];
                 
@@ -927,7 +1023,13 @@
                                         { type: 'unicorn', emoji: '🦄', label: 'חד קרן / Unicorn' },
                                         { type: 'mouse', emoji: '🐭', label: 'עכבר / Mouse' },
                                         { type: 'dress', emoji: '👗', label: 'שמלה / Dress' },
-                                        { type: 'shoe', emoji: '👠', label: 'נעל / Shoe' }
+                                        { type: 'shoe', emoji: '👠', label: 'נעל / Shoe' },
+                                        { type: 'cookie', emoji: '🍪', label: 'עוגייה / Cookie' },
+                                        { type: 'chair', emoji: '🪑', label: 'כיסא / Chair' },
+                                        { type: 'star', emoji: '⭐', label: 'כוכב / Star' },
+                                        { type: 'shirt', emoji: '👕', label: 'חולצה / Shirt' },
+                                        { type: 'trousers', emoji: '👖', label: 'מכנסיים / Trousers' },
+                                        { type: 'clown', emoji: '🤡', label: 'ליצן / Clown' }
                                     ].map(item => (
                                         <button
                                             key={item.type}
@@ -956,11 +1058,76 @@
                 );
             };
 
+            // Celebration overlay component
+            const CelebrationOverlay = ({ celebration }) => {
+                if (!celebration) return null;
+                const count = 22;
+                const particles = Array.from({ length: count }, (_, i) => {
+                    const angle = (360 / count) * i;
+                    const emoji = celebration.emojis[i % celebration.emojis.length];
+                    const delay = (i % 4) * 0.06;
+                    const duration = 1.8 + (i % 3) * 0.3;
+                    return { angle, emoji, delay, duration };
+                });
+                return (
+                    <div
+                        key={celebration.key}
+                        style={{
+                            position: 'fixed', inset: 0,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            pointerEvents: 'none', zIndex: 9999,
+                            animation: `celebration-bg-fade ${2.6}s ease forwards`
+                        }}
+                    >
+                        {particles.map((p, i) => (
+                            <span
+                                key={i}
+                                style={{
+                                    position: 'absolute',
+                                    top: '50%', left: '50%',
+                                    fontSize: '2rem',
+                                    '--angle': `${p.angle}deg`,
+                                    animation: `fly-emoji ${p.duration}s ease-out ${p.delay}s both`,
+                                    display: 'inline-block',
+                                    lineHeight: 1,
+                                }}
+                            >
+                                {p.emoji}
+                            </span>
+                        ))}
+                    </div>
+                );
+            };
+
             return (
                 <div className="max-w-4xl mx-auto p-6 bg-white min-h-screen" dir="rtl">
-                    <h1 className="text-4xl font-bold text-center mb-8 text-blue-600">💖 VERSION 4.5 💖<br/>
+                    <CelebrationOverlay celebration={celebration} />
+                    <h1 className="text-4xl font-bold text-center mb-4 text-blue-600">💖 VERSION 4.5 💖<br/>
                         מעבדת החיסור / Subtraction Lab
                     </h1>
+
+                    {/* Score bar */}
+                    <div className="flex justify-center items-center gap-6 mb-6" dir="ltr">
+                        <div className="flex items-center gap-2 bg-green-50 border-2 border-green-300 rounded-xl px-5 py-2">
+                            <span className="text-2xl">✅</span>
+                            <span key={'c'+correctCount} className={correctCount > 0 ? 'score-pop' : ''} style={{display:'inline-block'}}>
+                                <span className="text-3xl font-bold text-green-600">{correctCount}</span>
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2 bg-red-50 border-2 border-red-300 rounded-xl px-5 py-2">
+                            <span className="text-2xl">❌</span>
+                            <span key={'w'+wrongCount} className={wrongCount > 0 ? 'score-pop' : ''} style={{display:'inline-block'}}>
+                                <span className="text-3xl font-bold text-red-500">{wrongCount}</span>
+                            </span>
+                        </div>
+                        <button
+                            onClick={() => { setCorrectCount(0); setWrongCount(0); }}
+                            className="text-sm text-gray-400 hover:text-gray-600 border border-gray-300 rounded-lg px-3 py-1"
+                            title="Reset score / אפס ניקוד"
+                        >
+                            🔄 ניקוד / Score
+                        </button>
+                    </div>
                     
                     <div className="bg-purple-50 rounded-lg p-6 mb-8">
                         <div className="flex items-center justify-center gap-4 flex-wrap" dir="ltr">
@@ -1023,7 +1190,25 @@
                             </button>
                             
                             <button
-                                onClick={() => setShowResult(true)}
+                                onClick={() => {
+                                    if (userAnswer === '') return;
+                                    const isCorrect = parseInt(userAnswer) === correctAnswer;
+                                    setShowResult(true);
+                                    setResultAnimKey(k => k + 1);
+                                    if (isCorrect) {
+                                        setCorrectCount(c => c + 1);
+                                        // find current object emoji for celebration mix-in
+                                        const objEmojis = {
+                                            apple:'🍎', orange:'🍊', banana:'🍌', strawberry:'🍓',
+                                            ball:'⚽', butterfly:'🦋', unicorn:'🦄', mouse:'🐭',
+                                            dress:'👗', shoe:'👠', cookie:'🍪', chair:'🪑',
+                                            star:'⭐', shirt:'👕', trousers:'👖', clown:'🤡'
+                                        };
+                                        triggerCelebration(objEmojis[objectType] || '🎉');
+                                    } else {
+                                        setWrongCount(c => c + 1);
+                                    }
+                                }}
                                 disabled={userAnswer === ''}
                                 className="px-6 py-2 mt-5 bg-purple-500 text-white rounded-lg hover:bg-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
                             >
@@ -1034,12 +1219,12 @@
                         {showResult && userAnswer !== '' && (
                             <div className="text-center mt-4">
                                 {parseInt(userAnswer) === correctAnswer ? (
-                                    <p className="text-2xl font-bold text-green-600">
-                                        ✓ נכון! מעולה! / Correct! Excellent!
+                                    <p key={resultAnimKey} className="correct-bounce text-2xl font-bold text-green-600">
+                                        ✓ נכון! מעולה! / Correct! Excellent! 🌟
                                     </p>
                                 ) : (
-                                    <p className="text-2xl font-bold text-red-600">
-                                        נסה שוב / Try again
+                                    <p key={resultAnimKey} className="wrong-shake text-2xl font-bold text-red-600">
+                                        ❌ נסה שוב / Try again
                                     </p>
                                 )}
                             </div>
@@ -1074,6 +1259,12 @@
                              objectType === 'unicorn' ? '🦄 חדי קרן / Unicorns' :
                              objectType === 'mouse' ? '🐭 עכברים / Mice' :
                              objectType === 'dress' ? '👗 שמלות / Dresses' :
+                             objectType === 'cookie' ? '🍪 עוגיות / Cookies' :
+                             objectType === 'chair' ? '🪑 כיסאות / Chairs' :
+                             objectType === 'star' ? '⭐ כוכבים / Stars' :
+                             objectType === 'shirt' ? '👕 חולצות / Shirts' :
+                             objectType === 'trousers' ? '👖 מכנסיים / Trousers' :
+                             objectType === 'clown' ? '🤡 ליצנים / Clowns' :
                              '👠 נעליים / Shoes'}
                         </button>
                         <button
