@@ -1,4 +1,4 @@
-# Subtraction Lab - GitHub Pages Deployment Guide
+# Math Lab - GitHub Pages Deployment Guide
 
 מעבדת החיסור - מדריך פריסה ל-GitHub Pages
 
@@ -49,7 +49,7 @@ https://noam123.github.io/subtraction-lab
 ### Method 1: Bookmark It
 1. Open the GitHub Pages URL in Chrome/Firefox
 2. Tap the **⋮** menu → **"Add to Home screen"**
-3. Name it "מעבדת החיסור" or "Subtraction Lab"
+3. Name it "מעבדת המתמטיקה" or "Math Lab"
 4. Now you have an app icon on your home screen!
 
 ### Method 2: Share the Link
